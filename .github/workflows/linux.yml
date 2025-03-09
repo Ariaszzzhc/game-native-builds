@@ -1,0 +1,38 @@
+name: Linux
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.ref }}-${{ github.base_ref }}-${{ github.head_ref }}-Linux
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+      - name: Build
+        run: |
+          xmake f -m release
+          xmake
+      - name: Find shared libraries
+        id: find_libraries
+        run: |
+          # Find only shared libraries
+          echo "LIBRARY_FILES=$(find build -type f -name "*.so*" | tr '\n' ' ')" >> $GITHUB_ENV
+      - name: Upload shared libraries to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.LIBRARY_FILES }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Note: We use softprops/action-gh-release instead of actions/upload-artifact
+        # because upload-artifact only stores files with the workflow run temporarily,
+        # while we need to attach files directly to the GitHub Release as permanent assets

@@ -1,0 +1,34 @@
+name: Windows
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    concurrency:
+      group: ${{ github.ref }}-${{ github.base_ref }}-${{ github.head_ref }}-Windows
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Build
+        run: |
+          xmake f -p windows -m release --toolchain=msvc
+          xmake
+      - name: Find shared libraries
+        id: find_libraries
+        shell: bash
+        run: |
+          # Find only DLL files
+          echo "LIBRARY_FILES=$(find build -type f -name "*.dll" | tr '\n' ' ')" >> $GITHUB_ENV
+      - name: Upload shared libraries to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.LIBRARY_FILES }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

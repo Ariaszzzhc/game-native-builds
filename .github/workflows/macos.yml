@@ -1,0 +1,31 @@
+name: macOS (arm64)
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    concurrency:
+      group: ${{ github.ref }}-${{ github.base_ref }}-${{ github.head_ref }}-macOS-arm64
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+      - name: Build
+        run: |
+          xmake f -p macosx -a arm64 -m release
+          xmake
+      - name: Find shared libraries
+        id: find_libraries
+        run: |
+          # Find only dylib files
+          echo "LIBRARY_FILES=$(find build -type f -name "*.dylib" | tr '\n' ' ')" >> $GITHUB_ENV
+      - name: Upload shared libraries to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.LIBRARY_FILES }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
