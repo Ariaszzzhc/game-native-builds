@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.ref }}-${{ github.base_ref }}-${{ github.head_ref }}-Linux
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v2
